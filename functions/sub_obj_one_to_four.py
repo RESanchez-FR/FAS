@@ -144,7 +144,7 @@ from matplotlib.path import Path
 
 
 "works for 4D data "
-def compute_x_y_z_angles(data_1, data_2, mag_data, z_slice):
+def compute_x_y_z_angles_strain(data_1, data_2, mag_data, z_slice):
     """
     Compute angles with standard deviations using global contour_points.
     Returns: (avg_polar, avg_azimuth, std_polar, std_azimuth)
@@ -201,7 +201,7 @@ def compute_x_y_z_angles(data_1, data_2, mag_data, z_slice):
     return avg_polar, avg_azimuth, std_polar, std_azimuth
 
 # Plot with error bars
-avg_polar_strain, avg_azimuth_strain, std_polar_strain, std_azimuth_strain = compute_x_y_z_angles(
+avg_polar_strain, avg_azimuth_strain, std_polar_strain, std_azimuth_strain = compute_x_y_z_angles_strain(
     data_1=strain_rotated,
     data_2=DTI_rotated,
     mag_data=m_data,
@@ -223,92 +223,93 @@ plt.errorbar(frames, avg_azimuth_strain, yerr=std_azimuth_strain,
 
 plt.xlabel('Frame', fontsize=12)
 plt.ylabel('Angle (degrees)', fontsize=12)
-plt.title('Angles with Standard Deviation', fontsize=14)
+plt.title('Strain Angles w/Standard Deviation', fontsize=14)
 plt.legend()
 plt.grid(alpha=0.3)
 plt.tight_layout()
-# Save before showing (prevents blank images)
-plt.savefig('angle_plot_4D.png', dpi=300, bbox_inches='tight', facecolor='white')  # <-- Add this line
+
+plt.savefig('Strain Angle Plot.png', dpi=300, bbox_inches='tight', facecolor='white')  # <-- Add this line
 plt.show()
 
 
-# "works for DTI but still unsure"
+"works for DTI but still unsure"
 
-# def compute_3d_angles(data_2, mag_data, z_slice):
-#     """
-#     Compute angles and deviations for 3D data (x, y, components) in a contoured region.
-#     Returns: (avg_polar, avg_azimuth, std_polar, std_azimuth)
-#     """
-#     global contour_points
-#     contour_points = []  # Reset contour
+def compute_x_y_z_angles_DTI(data_2, mag_data, z_slice):
+    """
+    Compute angles and deviations for DTI data (x, y, components) in a contoured region.
+    Returns: (avg_polar, avg_azimuth, std_polar, std_azimuth)
+    """
+    global contour_points
+    contour_points = []  # Reset contour
     
-#     # Draw contour on magnitude image
-#     visualize_magnitude_image(mag_data, z_slice)
+    # Draw contour on magnitude image
+    visualize_magnitude_image(mag_data, z_slice)
     
-#     # Validate contour
-#     if len(contour_points) < 3:
-#         raise ValueError(f"Need ≥3 contour points (got {len(contour_points)})")
+    # Validate contour
+    if len(contour_points) < 3:
+        raise ValueError(f"Need ≥3 contour points (got {len(contour_points)})")
     
-#     # Create mask
-#     contour_array = np.array(contour_points, dtype=np.int32).reshape((-1, 1, 2))
-#     mask = np.zeros(data_2.shape[:2], dtype=np.uint8)
-#     cv2.fillPoly(mask, [contour_array], 1)
-#     x_idx, y_idx = np.where(mask == 1)
+    # Create mask
+    contour_array = np.array(contour_points, dtype=np.int32).reshape((-1, 1, 2))
+    mask = np.zeros(data_2.shape[:2], dtype=np.uint8)
+    cv2.fillPoly(mask, [contour_array], 1)
+    x_idx, y_idx = np.where(mask == 1)
     
-#     # Extract vectors from last dimension (components)
-#     vectors = data_2[x_idx, y_idx, :]  # Shape: (N_points, 3)
+    # Extract vectors from last dimension (components)
+    vectors = data_2[x_idx, y_idx, :]  # Shape: (N_points, 3)
     
-#     # Initialize outputs
-#     avg_polar, avg_azimuth = np.nan, np.nan
-#     std_polar, std_azimuth = np.nan, np.nan
+    # Initialize outputs
+    avg_polar, avg_azimuth = np.nan, np.nan
+    std_polar, std_azimuth = np.nan, np.nan
     
-#     if len(vectors) > 0:
-#         # Compute mean vector
-#         mean_vec = np.mean(vectors, axis=0)
-#         magnitude = np.linalg.norm(mean_vec)
+    if len(vectors) > 0:
+        # Compute mean vector
+        mean_vec = np.mean(vectors, axis=0)
+        magnitude = np.linalg.norm(mean_vec)
         
-#         if magnitude > 1e-6:
-#             # Average angles from mean vector
-#             avg_polar = np.degrees(np.arccos(mean_vec[2] / magnitude))
-#             avg_azimuth = np.degrees(np.arctan2(mean_vec[1], mean_vec[0]))
+        if magnitude > 1e-6:
+            # Average angles from mean vector
+            avg_polar = np.degrees(np.arccos(mean_vec[2] / magnitude))
+            avg_azimuth = np.degrees(np.arctan2(mean_vec[1], mean_vec[0]))
             
-#             # Individual angles for deviation calculation
-#             magnitudes = np.linalg.norm(vectors, axis=1)
-#             valid = magnitudes > 1e-6
-#             z_norm = vectors[:, 2] / np.where(valid, magnitudes, 1)
-#             theta_all = np.degrees(np.arccos(z_norm[valid]))
-#             phi_all = np.degrees(np.arctan2(vectors[:, 1], vectors[:, 0]))
+            # Individual angles for deviation calculation
+            magnitudes = np.linalg.norm(vectors, axis=1)
+            valid = magnitudes > 1e-6
+            z_norm = vectors[:, 2] / np.where(valid, magnitudes, 1)
+            theta_all = np.degrees(np.arccos(z_norm[valid]))
+            phi_all = np.degrees(np.arctan2(vectors[:, 1], vectors[:, 0]))
             
-#             # Circular std for azimuth (handle wrap-around)
-#             phi_diff = (phi_all - avg_azimuth + 180) % 360 - 180
-#             std_polar = np.std(theta_all)
-#             std_azimuth = np.std(phi_diff)
+            # Circular std for azimuth (handle wrap-around)
+            phi_diff = (phi_all - avg_azimuth + 180) % 360 - 180
+            std_polar = np.std(theta_all)
+            std_azimuth = np.std(phi_diff)
     
-#     return avg_polar, avg_azimuth, std_polar, std_azimuth
+    return avg_polar, avg_azimuth, std_polar, std_azimuth
 
-# # Compute angles for 3D data (x, y, components)
-# avg_polar, avg_azim, std_polar, std_azim = compute_3d_angles(
-#     data_2=DTI_rotated,
-#     mag_data=m_data,
-#     z_slice=10
-# )
+# Compute angles for 3D data (x, y, components)
+avg_polar_DTI, avg_azim_DTI, std_polar_DTI, std_azim_DTI = compute_x_y_z_angles_DTI(
+    data_2=DTI_rotated,
+    mag_data=m_data,
+    z_slice=10
+)
 
-# # Create error bar plot
-# plt.figure(figsize=(8, 5))
-# plt.errorbar(
-#     [0], [avg_polar], yerr=[std_polar],
-#     fmt='o', capsize=5, label='Polar Angle (θ)'
-# )
-# plt.errorbar(
-#     [1], [avg_azim], yerr=[std_azim],
-#     fmt='s', capsize=5, label='Azimuthal Angle (φ)'
-# )
+# Create error bar plot
+plt.figure(figsize=(8, 5))
+plt.errorbar(
+    [0], [avg_polar_DTI], yerr=[std_polar_DTI],
+    fmt='o', capsize=5, label='Polar Angle (θ)'
+)
+plt.errorbar(
+    [1], [avg_azim_DTI], yerr=[std_azim_DTI],
+    fmt='s', capsize=5, label='Azimuthal Angle (φ)'
+)
 
-# plt.xticks([0, 1], ['Polar', 'Azimuth'])
-# plt.ylabel('Angle (degrees)')
-# plt.title('Angles with Standard Deviation in ROI')
-# plt.legend()
-# plt.grid(alpha=0.3)
-# plt.tight_layout()
-# plt.show()
+plt.xticks([0, 1], ['Polar', 'Azimuth'])
+plt.ylabel('Angle (degrees)')
+plt.title('DTI Angles w/Standard Deviation in ROI')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.savefig('DTI Angle Plot.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
 
