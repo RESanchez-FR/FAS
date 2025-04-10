@@ -368,7 +368,7 @@ plt.show()
 
 def compute_Lff_with_std(strain_vector, dti_eigenvector, x_idx, y_idx):
     """
-    Computes Lff = lambda1.(F)lambda1 where F is a vector of 3 components.
+    Computes Lff = lambda1.T(F)lambda1 where F is a vector of 3 components.
     
     Parameters:
     strain_vector: 4D array [x, y, time, 3] (x,y,z components)
@@ -391,8 +391,8 @@ def compute_Lff_with_std(strain_vector, dti_eigenvector, x_idx, y_idx):
         F = strain_vector[x_idx, y_idx, t, :]  # [n_points, 3]
         
         # For vector F, the operation becomes a simple dot product
-        # Compute element-wise product and then sum over components
-        Lff_values = np.sum(lambda1 * F, axis=1)
+        # Explicitly compute λ₁ᵀ * F (dot product)
+        Lff_values = np.einsum('ij,ij->i', lambda1, F)  # Same as your original 
         
         # Calculate mean and standard deviation over ROI
         mean_results[t] = np.mean(Lff_values)
@@ -450,8 +450,8 @@ frames = np.arange(len(mean_Evv))
 
 #Lff fiber 
 ax[0].errorbar(frames, mean_Lff, yerr= std_Lff, 
-               fmt='-o',capsize = 5, color='blue', label='Lff')
-ax[0].set_title('Lff, No DTI Reoriented : lambda1.(F)lambda1 ')  # Add title to first subplot
+               fmt='o',capsize = 5, color='blue', label='Lff')
+ax[0].set_title('Lff, No DTI Reoriented : lambda1.T(F)lambda1 ')  # Add title to first subplot
 ax[0].legend(loc='upper right')  # Add legend to first subplot
 # ax[0].set_ylim([-1, 1])  # Replace y_min and y_max with desired values
 ax[0].grid(True)
@@ -459,7 +459,7 @@ ax[0].grid(True)
 
 #Eff fiber
 ax[1].errorbar(frames, mean_Evv, yerr= std_Evv, 
-               fmt='-o',capsize = 5, color='red', label='Eff')
+               fmt='o',capsize = 5, color='red', label='Eff')
 ax[1].set_title('Eff,  No DTI Reoriented : (1/2)(v^T.C.v - 1)')  # Add title to second subplot
 ax[1].legend(loc='upper right')  # Add legend to second subplot
 ax[1].set_ylim([-0.5, 0.5])  # Replace y_min and y_max with desired values
@@ -532,15 +532,15 @@ frames = np.arange(len(mean_Evv))
 
 #Lff fiber 
 ax[0].errorbar(frames, mean_Lff_disp, yerr= std_Lff_disp, 
-               fmt='-o',capsize = 5, color='blue', label='Eff')
-ax[0].set_title('Lff W/ Reoriented DTI : lambda1.(F)lambda1')  # Add title to first subplot
+               fmt='o',capsize = 5, color='blue', label='Eff')
+ax[0].set_title('Lff W/ Reoriented DTI : lambda1.T(F)lambda1')  # Add title to first subplot
 ax[0].legend(loc='upper right')  # Add legend to first subplot
 # ax[0].set_ylim([-1, 1])  # Replace y_min and y_max with desired values
 ax[0].grid(True)
 
 #Lff fiber 
 ax[1].errorbar(frames, mean_Eff_disp, yerr= std_Eff_disp, 
-               fmt='-o',capsize = 5, color='red', label='Eff')
+               fmt='o',capsize = 5, color='red', label='Eff')
 ax[1].set_title('Eff W/ Reoriented DTI : (1/2)(v^T.C.v - 1)')  # Add title to first subplot
 ax[1].legend(loc='upper right')  # Add legend to first subplot
 # ax[0].set_ylim([-1, 1])  # Replace y_min and y_max with desired values
